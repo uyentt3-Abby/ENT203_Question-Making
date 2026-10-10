@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A2 English Question Unscramble Trainer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .word-chip {
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            touch-action: manipulation;
+        }
+
+        .word-chip:hover {
+            transform: translateY(-2px);
+        }
+
+        .word-chip:active {
+            transform: scale(0.95);
+        }
+
+        .slot-target {
+            min-height: 80px;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 12px 12px;
+        }
+
+        @keyframes popSuccess {
+            0% { transform: scale(0.9); opacity: 0.5; }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-pop {
+            animation: popSuccess 0.35s ease-out forwards;
+        }
+
+        @keyframes shakeError {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        .animate-shake {
+            animation: shakeError 0.4s ease-in-out;
+        }
+
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between antialiased">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-800/90 border-b border-slate-700/80 sticky top-0 z-30 backdrop-blur-md">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+            <!-- Brand / Logo -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid font-bold text-lg fa-spell-check"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight text-white flex items-center gap-2">
+                        Grammar Order Master
+                        <span class="text-xs bg-indigo-500/20 text-indigo-300 font-semibold px-2 py-0.5 rounded-full border border-indigo-500/30">A2 Level</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Arrange words into correct question order</p>
+                </div>
+            </div>
+
+            <!-- Header Controls & Score -->
+            <div class="flex items-center gap-2 sm:gap-4">
+                <!-- Sound Toggle -->
+                <button id="soundToggleBtn" onclick="toggleAudio()" class="w-9 h-9 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition" title="Toggle Sound">
+                    <i id="soundIcon" class="fa-solid fa-volume-high text-sm"></i>
+                </button>
+
+                <!-- Drawer Toggle -->
+                <button onclick="toggleGridDrawer()" class="flex items-center gap-2 bg-slate-700/80 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-600/50 text-sm font-medium text-slate-200 transition">
+                    <i class="fa-solid fa-grid-2 text-indigo-400"></i>
+                    <span class="hidden sm:inline">Questions</span>
+                    <span id="headerProgress" class="text-xs bg-slate-800 px-2 py-0.5 rounded text-indigo-300 font-mono">1/50</span>
+                </button>
+
+                <!-- Score Badge -->
+                <div class="flex items-center gap-2 bg-indigo-950/80 border border-indigo-500/30 px-3 py-1.5 rounded-lg">
+                    <i class="fa-solid fa-trophy text-amber-400 text-sm"></i>
+                    <span id="scoreDisplay" class="font-bold font-mono text-sm text-indigo-200">0</span>
+                    <span class="text-xs text-slate-400">pts</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Progress Bar -->
+        <div class="w-full bg-slate-900 h-1.5 overflow-hidden">
+            <div id="progressBar" class="bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 h-full w-0 transition-all duration-300"></div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="max-w-4xl w-full mx-auto px-4 py-6 flex-1 flex flex-col justify-center">
+
+        <!-- Question Drawer Sidebar / Modal (Hidden by default) -->
+        <div id="drawerOverlay" onclick="toggleGridDrawer()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-40 hidden transition-opacity"></div>
+        <aside id="gridDrawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-slate-800 border-l border-slate-700 z-50 transform translate-x-full transition-transform duration-300 flex flex-col shadow-2xl">
+            <div class="p-4 border-b border-slate-700 flex items-center justify-between bg-slate-800/80">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-indigo-400"></i>
+                    <h2 class="font-bold text-slate-100">Question Navigator (50)</h2>
+                </div>
+                <button onclick="toggleGridDrawer()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Filter Pills in Drawer -->
+            <div class="p-3 bg-slate-850 border-b border-slate-700/60 overflow-x-auto">
+                <div id="categoryFilterContainer" class="flex gap-1.5 text-xs whitespace-nowrap">
+                    <!-- Dynamic categories injected here -->
+                </div>
+            </div>
+
+            <!-- Grid of 50 Questions -->
+            <div class="p-4 overflow-y-auto flex-1">
+                <div id="questionsGrid" class="grid grid-cols-5 gap-2">
+                    <!-- Grid items 1 to 50 generated dynamically -->
+                </div>
+            </div>
+
+            <!-- Footer Stats in Drawer -->
+            <div class="p-4 border-t border-slate-700 bg-slate-850 flex items-center justify-between text-xs text-slate-400">
+                <div class="flex items-center gap-3">
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Correct</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Mistake</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slate-600"></span> Unsolved</span>
+                </div>
+                <button onclick="showResultsModal()" class="text-indigo-400 hover:underline font-semibold">Finish Test</button>
+            </div>
+        </aside>
+
+        <!-- Main Question Card Container -->
+        <section id="quizCard" class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 sm:p-7 shadow-xl backdrop-blur-sm relative overflow-hidden">
+            
+            <!-- Question Top Meta -->
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                <div class="flex items-center gap-2">
+                    <span id="questionNumBadge" class="bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 text-xs font-bold px-3 py-1 rounded-full">
+                        Question 1 / 50
+                    </span>
+                    <span id="questionCategory" class="bg-slate-700 text-slate-300 text-xs font-medium px-2.5 py-1 rounded-full border border-slate-600">
+                        Present Simple
+                    </span>
+                </div>
+
+                <div class="flex items-center gap-3 text-xs text-slate-400">
+                    <button onclick="getHint()" id="hintBtn" class="flex items-center gap-1 text-amber-400 hover:text-amber-300 bg-amber-400/10 border border-amber-400/20 px-2.5 py-1 rounded-lg transition">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Hint</span>
+                    </button>
+                    <span id="streakBadge" class="hidden items-center gap-1 text-orange-400 font-semibold bg-orange-400/10 px-2 py-0.5 rounded">
+                        <i class="fa-solid fa-fire"></i> <span id="streakCount">0</span> Streak
+                    </span>
+                </div>
+            </div>
+
+            <!-- Instruction Title -->
+            <div class="mb-5">
+                <h2 class="text-slate-300 text-sm font-medium mb-1">Arrange the words into a grammatically correct question:</h2>
+                <div id="patternHint" class="text-xs text-indigo-300/80 italic font-mono hidden">
+                    <i class="fa-solid fa-circle-info mr-1"></i> Pattern: <span id="patternText"></span>
+                </div>
+            </div>
+
+            <!-- Target Drop Zone / Sentence Builder Line -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-1.5 text-xs text-slate-400">
+                    <span>Your Answer:</span>
+                    <button onclick="clearSelectedWords()" class="text-slate-400 hover:text-rose-400 text-xs flex items-center gap-1 transition">
+                        <i class="fa-solid fa-rotate-left text-[10px]"></i> Reset Line
+                    </button>
+                </div>
+                
+                <div id="answerDropZone" 
+                     class="slot-target border-2 border-dashed border-slate-600 hover:border-slate-500 rounded-xl p-3 min-h-[90px] flex flex-wrap items-center gap-2 transition-all bg-slate-900/60"
+                     ondragover="allowDrop(event)" 
+                     ondrop="handleDropToAnswer(event)">
+                    <span id="emptyPlaceholder" class="text-slate-500 text-sm italic select-none pointer-events-none w-full text-center">
+                        Tap words below or drag them here to build the question...
+                    </span>
+                    <!-- Selected word chips will be appended here -->
+                </div>
+            </div>
+
+            <!-- Scrambled Words Pool -->
+            <div class="mb-6">
+                <div class="text-xs text-slate-400 mb-2 flex justify-between items-center">
+                    <span>Available Words:</span>
+                    <span class="text-[11px] text-slate-500">Click a word to add it</span>
+                </div>
+                <div id="wordsPool" 
+                     class="min-h-[80px] bg-slate-850 p-4 rounded-xl border border-slate-700/60 flex flex-wrap justify-center items-center gap-2.5 bg-slate-900/30"
+                     ondragover="allowDrop(event)" 
+                     ondrop="handleDropToPool(event)">
+                    <!-- Scrambled word chips injected here -->
+                </div>
+            </div>
+
+            <!-- Grammar Explanation & Feedback Box (Hidden initially) -->
+            <div id="feedbackBanner" class="hidden mb-6 p-4 rounded-xl border transition-all animate-pop">
+                <div class="flex items-start gap-3">
+                    <div id="feedbackIcon" class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+                        <!-- Icon injected -->
+                    </div>
+                    <div class="flex-1">
+                        <h4 id="feedbackTitle" class="font-bold text-sm mb-1"></h4>
+                        <p id="feedbackText" class="text-xs sm:text-sm text-slate-300 leading-relaxed"></p>
+                        <div id="correctOrderBox" class="mt-2.5 pt-2 border-t border-slate-700/50 text-xs hidden">
+                            <span class="text-slate-400 font-semibold">Correct Order:</span>
+                            <p id="correctOrderSentence" class="font-semibold text-emerald-300 text-sm mt-0.5 font-mono"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation and Action Buttons -->
+            <div class="flex items-center justify-between gap-3 pt-2 border-t border-slate-700/60">
+                <button id="prevBtn" onclick="navigateQuestion(-1)" class="px-4 py-2.5 rounded-xl border border-slate-600 bg-slate-700/50 hover:bg-slate-700 text-slate-200 text-sm font-semibold flex items-center gap-2 transition disabled:opacity-40 disabled:pointer-events-none">
+                    <i class="fa-solid fa-arrow-left text-xs"></i> Previous
+                </button>
+
+                <div class="flex items-center gap-2">
+                    <button id="checkBtn" onclick="checkAnswer()" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 flex items-center gap-2 transition transform active:scale-95">
+                        <span>Check Answer</span>
+                        <i class="fa-solid fa-check"></i>
+                    </button>
+
+                    <button id="nextBtn" onclick="navigateQuestion(1)" class="hidden px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 flex items-center gap-2 transition transform active:scale-95">
+                        <span>Next Question</span>
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Results / Final Score Modal -->
+    <div id="resultsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-pop">
+            
+            <div class="text-center mb-5">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-500 mx-auto flex items-center justify-center text-3xl text-white shadow-xl shadow-indigo-500/30 mb-3">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white">Exercise Complete!</h2>
+                <p class="text-slate-400 text-xs mt-1">Here is how you performed in A2 Question Word Order</p>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-3 gap-3 mb-5">
+                <div class="bg-slate-900/60 border border-slate-700/60 p-3 rounded-xl text-center">
+                    <div id="finalScore" class="text-xl font-extrabold text-indigo-400 font-mono">0 / 50</div>
+                    <div class="text-[11px] text-slate-400 mt-0.5">Correct Score</div>
+                </div>
+                <div class="bg-slate-900/60 border border-slate-700/60 p-3 rounded-xl text-center">
+                    <div id="accuracyPercent" class="text-xl font-extrabold text-emerald-400 font-mono">0%</div>
+                    <div class="text-[11px] text-slate-400 mt-0.5">Accuracy</div>
+                </div>
+                <div class="bg-slate-900/60 border border-slate-700/60 p-3 rounded-xl text-center">
+                    <div id="masteryBadge" class="text-xs font-extrabold text-amber-400 mt-1">Beginner</div>
+                    <div class="text-[11px] text-slate-400 mt-0.5">Grammar Rank</div>
+                </div>
+            </div>
+
+            <!-- Incorrect Questions Review List -->
+            <div class="flex-1 overflow-y-auto mb-5 border border-slate-700/60 rounded-xl bg-slate-900/40 p-3">
+                <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Detailed Breakdown</h3>
+                <div id="breakdownList" class="space-y-2 text-xs">
+                    <!-- Dynamic review items -->
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3">
+                <button onclick="restartQuiz()" class="flex-1 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-sm transition">
+                    <i class="fa-solid fa-rotate-right mr-1.5"></i> Restart All
+                </button>
+                <button onclick="retryMistakes()" id="retryMistakesBtn" class="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm transition hidden">
+                    <i class="fa-solid fa-filter text-xs mr-1.5"></i> Retry Missed
+                </button>
+                <button onclick="closeResultsModal()" class="py-3 px-4 rounded-xl bg-slate-800 border border-slate-600 hover:bg-slate-700 text-slate-300 text-sm">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950/80 border-t border-slate-800/80 py-3 text-center text-xs text-slate-500">
+        Interactive A2 Level English Grammar Training • 50 Word Order Question Practice
+    </footer>
+
+    <script>
+        // Audio Synthesizer using Web Audio API
+        let audioEnabled = true;
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playSound(type) {
+            if (!audioEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                const now = ctx.currentTime;
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'correct') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now); // A3
+                    osc.frequency.setValueAtTime(174.61, now + 0.1); // F3
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                }
+            } catch (e) {
+                console.log('Audio play error:', e);
+            }
+        }
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            const icon = document.getElementById('soundIcon');
+            const btn = document.getElementById('soundToggleBtn');
+            if (audioEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-sm';
+                btn.classList.remove('text-slate-500');
+                btn.classList.add('text-slate-300');
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-sm';
+                btn.classList.add('text-slate-500');
+                btn.classList.remove('text-slate-300');
+            }
+        }
+
+        const questionsData = [
+            // 1. Verb + To Infinitive (1 - 6)
+            {
+                id: 1,
+                category: "Verb + To Infinitive",
+                pattern: "Auxiliary + Subject + Verb + to-infinitive + Object + Time?",
+                words: ["Do", "you", "want", "to", "play", "tennis", "with", "us", "today?"],
+                explanation: "Verbs like 'want' take a 'to + infinitive' verb phrase ('to play')."
+            },
+            {
+                id: 2,
+                category: "Verb + To Infinitive",
+                pattern: "Wh- word + did + Subject + Verb + to-infinitive + Object?",
+                words: ["Where", "did", "she", "decide", "to", "buy", "her", "new", "shoes?"],
+                explanation: "Verb structure: Wh- word + did + subject + main verb (decide) + to-infinitive (to buy)."
+            },
+            {
+                id: 3,
+                category: "Verb + To Infinitive",
+                pattern: "Are + Subject + Verb-ing + to-infinitive + Time?",
+                words: ["Are", "you", "planning", "to", "study", "abroad", "next", "year?"],
+                explanation: "'Planning' is followed by a to-infinitive verb pattern: planning to study."
+            },
+            {
+                id: 4,
+                category: "Verb + To Infinitive",
+                pattern: "Why + did + Subject + Verb + to-infinitive + Object?",
+                words: ["Why", "did", "you", "agree", "to", "help", "him", "with", "his", "work?"],
+                explanation: "'Agree' is followed by 'to + infinitive' (agree to help)."
+            },
+            {
+                id: 5,
+                category: "Verb + To Infinitive",
+                pattern: "Does + Subject + Verb + to-infinitive + Place + Time?",
+                words: ["Does", "he", "need", "to", "leave", "the", "party", "early", "tonight?"],
+                explanation: "The modal-like main verb 'need' takes 'to + infinitive' (need to leave)."
+            },
+            {
+                id: 6,
+                category: "Verb + To Infinitive",
+                pattern: "What time + do + Subject + Verb + to-infinitive + Object?",
+                words: ["What", "time", "do", "you", "hope", "to", "finish", "your", "project?"],
+                explanation: "Question order: Question phrase (What time) + do + subject + verb (hope) + to-infinitive (to finish)."
+            },
+
+            // 2. Verb + Gerund (7 - 12)
+            {
+                id: 7,
+                category: "Verb + Gerund",
+                pattern: "Does + Subject + Verb + Gerund (-ing) + Object?",
+                words: ["Does", "your", "sister", "enjoy", "listening", "to", "classical", "music?"],
+                explanation: "Verbs of preference like 'enjoy' are followed by a gerund verb form ending in -ing (enjoy listening)."
+            },
+            {
+                id: 8,
+                category: "Verb + Gerund",
+                pattern: "When + did + Subject + Verb + Gerund (-ing) + Object?",
+                words: ["When", "did", "you", "finish", "painting", "the", "living", "room?"],
+                explanation: "'Finish' takes a gerund object verb form: finish + painting."
+            },
+            {
+                id: 9,
+                category: "Verb + Gerund",
+                pattern: "Do + Subject + Verb + Gerund (-ing) + Prepositional phrase?",
+                words: ["Do", "you", "mind", "opening", "the", "door", "for", "me,", "please?"],
+                explanation: "The polite question structure 'Do you mind...' is followed by a gerund (-ing): mind opening."
+            },
+            {
+                id: 10,
+                category: "Verb + Gerund",
+                pattern: "Why + do + Subject + Verb + Gerund (-ing) + Object?",
+                words: ["Why", "do", "they", "keep", "asking", "the", "same", "question?"],
+                explanation: "The continuous action verb 'keep' is followed directly by a gerund (-ing): keep asking."
+            },
+            {
+                id: 11,
+                category: "Verb + Gerund",
+                pattern: "Have + Subject + Verb-ed + Gerund (-ing) + Object?",
+                words: ["Have", "you", "considered", "buying", "a", "smaller", "electric", "car?"],
+                explanation: "The verb 'consider' pattern requires a gerund: considered buying."
+            },
+            {
+                id: 12,
+                category: "Verb + Gerund",
+                pattern: "Does + Subject + Verb + Gerund (-ing) + Object + Frequency?",
+                words: ["Does", "he", "practice", "speaking", "English", "every", "single", "day?"],
+                explanation: "The verb 'practice' takes a gerund: practice speaking."
+            },
+
+            // 3. Used to & Didn't use to (13 - 18)
+            {
+                id: 13,
+                category: "Used to / Didn't use to",
+                pattern: "Did + Subject + use to + Base Verb + Place?",
+                words: ["Did", "you", "use", "to", "live", "in", "a", "big", "house?"],
+                explanation: "In questions, 'Did' carries past tense, so write 'use to' (without 'd') + base verb."
+            },
+            {
+                id: 14,
+                category: "Used to / Didn't use to",
+                pattern: "Where + did + Subject + use to + Base Verb + Time?",
+                words: ["Where", "did", "your", "parents", "use", "to", "spend", "their", "summer?"],
+                explanation: "Past habitual question order: Where + did + subject + use to + base verb."
+            },
+            {
+                id: 15,
+                category: "Used to / Didn't use to",
+                pattern: "Why + didn't + Subject + use to + Base Verb + Gerund?",
+                words: ["Why", "didn't", "you", "use", "to", "like", "eating", "vegetables?"],
+                explanation: "Negative habit question: Why + didn't + subject + use to + base verb (like)."
+            },
+            {
+                id: 16,
+                category: "Used to / Didn't use to",
+                pattern: "Didn't + Subject + use to + Base Verb + Object?",
+                words: ["Didn't", "she", "use", "to", "have", "long", "dark", "hair?"],
+                explanation: "Negative past state question: Didn't + subject + use to + base verb (have)."
+            },
+            {
+                id: 17,
+                category: "Used to / Didn't use to",
+                pattern: "Which + Noun + did + Subject + use to + Base Verb?",
+                words: ["Which", "school", "did", "you", "use", "to", "attend", "as", "a", "child?"],
+                explanation: "Choice question: Which school + did + subject + use to + base verb (attend)."
+            },
+            {
+                id: 18,
+                category: "Used to / Didn't use to",
+                pattern: "Why + didn't + Subject + use to + Base Verb + Object?",
+                words: ["Why", "didn't", "he", "use", "to", "play", "sports", "at", "school?"],
+                explanation: "Notice 'use to' is used with 'didn't' (not 'used to'): didn't + use to + play."
+            },
+
+            // 4. Simple Tenses (Present, Past, Future) (19 - 26)
+            {
+                id: 19,
+                category: "Simple Tenses",
+                pattern: "Where + does + Subject + Base Verb + Time?",
+                words: ["Where", "does", "your", "brother", "work", "on", "weekends?"],
+                explanation: "Simple Present Wh- question with 3rd person singular: Where + does + subject + base verb."
+            },
+            {
+                id: 20,
+                category: "Simple Tenses",
+                pattern: "What time + did + Subject + Base Verb + Time?",
+                words: ["What", "time", "did", "the", "train", "leave", "the", "station", "yesterday?"],
+                explanation: "Simple Past question: What time + did + subject + base verb (leave) + past time expression."
+            },
+            {
+                id: 21,
+                category: "Simple Tenses",
+                pattern: "Will + Subject + Base Verb + Place + Time?",
+                words: ["Will", "you", "come", "to", "my", "birthday", "party", "next", "Saturday?"],
+                explanation: "Simple Future with 'Will': Will + subject + base verb (come) + time."
+            },
+            {
+                id: 22,
+                category: "Simple Tenses",
+                pattern: "When + is + Subject + going to + Base Verb + Place?",
+                words: ["When", "is", "your", "family", "going", "to", "visit", "London?"],
+                explanation: "Future with 'be going to': When + is + subject + going to + base verb."
+            },
+            {
+                id: 23,
+                category: "Simple Tenses",
+                pattern: "How often + do + Subject + Base Verb + Object + Time?",
+                words: ["How", "often", "do", "you", "visit", "your", "grandparents", "in", "summer?"],
+                explanation: "Frequency question: How often + do + subject + base verb (visit)."
+            },
+            {
+                id: 24,
+                category: "Simple Tenses",
+                pattern: "Did + Subject + Base Verb + Object + Preposition phrase?",
+                words: ["Did", "she", "call", "you", "after", "finishing", "her", "homework?"],
+                explanation: "Simple Past Yes/No question: Did + subject + base verb (call)."
+            },
+            {
+                id: 25,
+                category: "Simple Tenses",
+                pattern: "Where + will + Subject + Base Verb + Time?",
+                words: ["Where", "will", "you", "stay", "during", "your", "winter", "vacation?"],
+                explanation: "Future Simple: Question word + will + subject + base verb."
+            },
+            {
+                id: 26,
+                category: "Simple Tenses",
+                pattern: "Does + Subject + Base Verb + Preposition phrase?",
+                words: ["Does", "this", "bus", "stop", "near", "the", "central", "train", "station?"],
+                explanation: "Simple Present Yes/No question: Does + singular subject + base verb (stop)."
+            },
+
+            // 5. Present Perfect (27 - 32)
+            {
+                id: 27,
+                category: "Present Perfect",
+                pattern: "Have + Subject + ever + Past Participle + Object + Place?",
+                words: ["Have", "you", "ever", "eaten", "sushi", "at", "a", "Japanese", "restaurant?"],
+                explanation: "Present Perfect experience: Have + subject + ever + past participle (eaten)."
+            },
+            {
+                id: 28,
+                category: "Present Perfect",
+                pattern: "How long + has + Subject + Past Participle + Place?",
+                words: ["How", "long", "has", "she", "worked", "at", "this", "hospital?"],
+                explanation: "Duration question: How long + has + subject (she) + past participle (worked)."
+            },
+            {
+                id: 29,
+                category: "Present Perfect",
+                pattern: "Has + Subject + already + Past Participle + Object?",
+                words: ["Has", "your", "father", "already", "repaired", "the", "broken", "bicycle?"],
+                explanation: "Present Perfect with 'already': Has + subject + already + past participle."
+            },
+            {
+                id: 30,
+                category: "Present Perfect",
+                pattern: "Where + have + Subject + Past Participle + Purpose?",
+                words: ["Where", "have", "they", "gone", "for", "their", "anniversary", "trip?"],
+                explanation: "Present Perfect Wh- question: Where + have + subject + past participle (gone)."
+            },
+            {
+                id: 31,
+                category: "Present Perfect",
+                pattern: "Have + Subject + Past Participle + Gerund + Object + yet?",
+                words: ["Have", "you", "finished", "reading", "that", "interesting", "comic", "book", "yet?"],
+                explanation: "Present Perfect with 'yet' and gerund object: Have + subject + finished + reading... + yet."
+            },
+            {
+                id: 32,
+                category: "Present Perfect",
+                pattern: "Why + haven't + Subject + Past Participle + Object + Time?",
+                words: ["Why", "haven't", "you", "completed", "your", "grammar", "assignment", "today?"],
+                explanation: "Negative Present Perfect question: Why + haven't + subject + past participle (completed)."
+            },
+
+            // 6. Past Continuous (33 - 38)
+            {
+                id: 33,
+                category: "Past Continuous",
+                pattern: "What + were + Subject + Verb-ing + Time?",
+                words: ["What", "were", "you", "doing", "at", "seven", "o'clock", "last", "night?"],
+                explanation: "Past Continuous action in progress: What + were + subject (you) + verb-ing (doing)."
+            },
+            {
+                id: 34,
+                category: "Past Continuous",
+                pattern: "Was + Subject + Verb-ing + Time clause?",
+                words: ["Was", "it", "raining", "when", "you", "left", "the", "house", "today?"],
+                explanation: "Past Continuous interrupt phrase: Was + subject (it) + verb-ing (raining) + when-clause."
+            },
+            {
+                id: 35,
+                category: "Past Continuous",
+                pattern: "Where + was + Subject + Verb-ing + Time clause?",
+                words: ["Where", "was", "she", "going", "when", "you", "saw", "her?"],
+                explanation: "Wh- question in Past Continuous: Where + was + subject (she) + verb-ing (going)."
+            },
+            {
+                id: 36,
+                category: "Past Continuous",
+                pattern: "Were + Subject + Verb-ing + Time clause?",
+                words: ["Were", "they", "sleeping", "when", "the", "loud", "fire", "alarm", "sounded?"],
+                explanation: "Plural subject in Past Continuous: Were + subject (they) + verb-ing (sleeping)."
+            },
+            {
+                id: 37,
+                category: "Past Continuous",
+                pattern: "Why + was + Subject + Verb-ing + Adverb + Place?",
+                words: ["Why", "was", "he", "running", "so", "fast", "down", "the", "street?"],
+                explanation: "Past Continuous: Why + was + subject (he) + verb-ing (running) + adverb."
+            },
+            {
+                id: 38,
+                category: "Past Continuous",
+                pattern: "Who + were + Subject + Verb-ing + Preposition + Time?",
+                words: ["Who", "were", "you", "talking", "to", "on", "the", "phone", "earlier?"],
+                explanation: "Question with ending preposition: Who + were + you + talking to..."
+            },
+
+            // 7. Passive Voice (39 - 44)
+            {
+                id: 39,
+                category: "Passive Voice",
+                pattern: "Where + is + Subject + Past Participle + Preposition phrase?",
+                words: ["Where", "is", "English", "spoken", "as", "a", "main", "language?"],
+                explanation: "Present Passive Voice question: Where + is + subject (English) + past participle (spoken)."
+            },
+            {
+                id: 40,
+                category: "Passive Voice",
+                pattern: "Was + Subject + Past Participle + by + Agent?",
+                words: ["Was", "this", "beautiful", "cake", "made", "by", "your", "mother?"],
+                explanation: "Past Passive Voice question: Was + subject (this cake) + past participle (made) + by-agent."
+            },
+            {
+                id: 41,
+                category: "Passive Voice",
+                pattern: "When + was + Subject + Past Participle + Place?",
+                words: ["When", "was", "this", "famous", "bridge", "built", "in", "London?"],
+                explanation: "Past Passive Wh- question: When + was + subject + past participle (built)."
+            },
+            {
+                id: 42,
+                category: "Passive Voice",
+                pattern: "Are + Subject + Past Participle + Place?",
+                words: ["Are", "these", "fresh", "apples", "grown", "in", "your", "garden?"],
+                explanation: "Present Passive with plural subject: Are + subject (these apples) + past participle (grown)."
+            },
+            {
+                id: 43,
+                category: "Passive Voice",
+                pattern: "Why + was + Subject + Past Participle + Time?",
+                words: ["Why", "was", "the", "football", "game", "cancelled", "yesterday", "afternoon?"],
+                explanation: "Past Passive: Question word + was + subject (the game) + past participle (cancelled)."
+            },
+            {
+                id: 44,
+                category: "Passive Voice",
+                pattern: "Where + are + Subject + Past Participle + Time?",
+                words: ["Where", "are", "those", "smartphones", "manufactured", "nowadays?"],
+                explanation: "Present Passive: Where + are + plural subject + past participle (manufactured)."
+            },
+
+            // 8. Mixed Review & Combinations (45 - 50)
+            {
+                id: 45,
+                category: "Mixed Review",
+                pattern: "Did + Subject + use to + Verb + Gerund + Object?",
+                words: ["Did", "you", "use", "to", "enjoy", "playing", "video", "games?"],
+                explanation: "Combination of 'used to' + gerund: Did + subject + use to + enjoy + playing."
+            },
+            {
+                id: 46,
+                category: "Mixed Review",
+                pattern: "Were + Subject + Verb-ing + Time clause with Passive Voice?",
+                words: ["Were", "you", "watching", "TV", "when", "the", "email", "was", "sent?"],
+                explanation: "Past Continuous main clause ('were you watching') + Past Passive clause ('email was sent')."
+            },
+            {
+                id: 47,
+                category: "Mixed Review",
+                pattern: "Why + didn't + Subject + use to + Verb + to-infinitive?",
+                words: ["Why", "didn't", "you", "use", "to", "agree", "to", "help", "us?"],
+                explanation: "Combination of 'didn't use to' + 'verb to-infinitive': didn't use to agree to help."
+            },
+            {
+                id: 48,
+                category: "Mixed Review",
+                pattern: "Has + Subject + been + Past Participle + Agent?",
+                words: ["Has", "the", "stolen", "bike", "been", "found", "by", "the", "police?"],
+                explanation: "Present Perfect Passive: Has + subject + been + past participle (found)."
+            },
+            {
+                id: 49,
+                category: "Mixed Review",
+                pattern: "What + were + Subject + Verb-ing + to-infinitive + Time clause?",
+                words: ["What", "were", "you", "planning", "to", "do", "before", "it", "started", "raining?"],
+                explanation: "Past Continuous + to-infinitive + gerund clause: planning to do... started raining."
+            },
+            {
+                id: 50,
+                category: "Mixed Review",
+                pattern: "Did + Subject + use to + Verb + Gerund + Time phrase?",
+                words: ["Did", "you", "use", "to", "hate", "eating", "fish", "when", "young?"],
+                explanation: "'Did use to' + verb + gerund: Did you use to + hate + eating."
+            }
+        ];
+
+        let currentIndex = 0;
+        let score = 0;
+        let streak = 0;
+        let selectedCategory = "All";
+
+        // Store user state for all 50 questions
+        // { state: 'unanswered'|'correct'|'incorrect', userWords: [], attempts: 0 }
+        let userState = Array.from({ length: 50 }, () => ({
+            state: 'unanswered',
+            userWords: [],
+            attempts: 0,
+            hintShown: false
+        }));
+
+        let currentPool = [];
+        let currentSelected = [];
+
+        // Categories list
+        const categories = ["All", ...new Set(questionsData.map(q => q.category))];
+
+        window.onload = function() {
+            initQuiz();
+        };
+
+        function initQuiz() {
+            currentIndex = 0;
+            score = 0;
+            streak = 0;
+            userState = Array.from({ length: 50 }, () => ({
+                state: 'unanswered',
+                userWords: [],
+                attempts: 0,
+                hintShown: false
+            }));
+
+            renderCategoryFilters();
+            renderQuestion();
+            updateGlobalStats();
+        }
+
+        function renderCategoryFilters() {
+            const container = document.getElementById('categoryFilterContainer');
+            container.innerHTML = categories.map(cat => `
+                <button onclick="filterCategory('${cat}')" class="px-2.5 py-1 rounded-md transition font-medium ${
+                    selectedCategory === cat 
+                        ? 'bg-indigo-600 text-white' 
+                        : 'bg-slate-700/60 text-slate-300 hover:bg-slate-700'
+                }">
+                    ${cat}
+                </button>
+            `).join('');
+        }
+
+        function filterCategory(cat) {
+            selectedCategory = cat;
+            renderCategoryFilters();
+            
+            // Find first question matching filter
+            if (cat !== "All") {
+                const idx = questionsData.findIndex(q => q.category === cat);
+                if (idx !== -1) {
+                    currentIndex = idx;
+                }
+            }
+            renderQuestion();
+            toggleGridDrawer(false);
+        }
+
+        // Helper to shuffle array predictably without matching original exact order initially
+        function shuffleArray(array) {
+            let arr = [...array];
+            let attempts = 0;
+            do {
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                }
+                attempts++;
+            } while (arr.join(' ') === array.join(' ') && arr.length > 2 && attempts < 10);
+            return arr;
+        }
+
+        function renderQuestion() {
+            const q = questionsData[currentIndex];
+            const state = userState[currentIndex];
+
+            // Header Meta updates
+            document.getElementById('questionNumBadge').textContent = `Question ${currentIndex + 1} / 50`;
+            document.getElementById('headerProgress').textContent = `${currentIndex + 1}/50`;
+            document.getElementById('questionCategory').textContent = q.category;
+            
+            // Update Pattern Hint
+            const patternHint = document.getElementById('patternHint');
+            const patternText = document.getElementById('patternText');
+            if (state.hintShown) {
+                patternText.textContent = q.pattern;
+                patternHint.classList.remove('hidden');
+            } else {
+                patternHint.classList.add('hidden');
+            }
+
+            // Streak display
+            const streakBadge = document.getElementById('streakBadge');
+            document.getElementById('streakCount').textContent = streak;
+            if (streak >= 2) {
+                streakBadge.classList.remove('hidden');
+                streakBadge.classList.add('flex');
+            } else {
+                streakBadge.classList.add('hidden');
+                streakBadge.classList.remove('flex');
+            }
+
+            // Prepare word pools
+            if (state.state === 'unanswered' && state.userWords.length === 0) {
+                currentSelected = [];
+                currentPool = shuffleArray(q.words);
+            } else {
+                currentSelected = [...state.userWords];
+                // pool is remaining words
+                const tempSelected = [...currentSelected];
+                currentPool = q.words.filter(w => {
+                    const idx = tempSelected.indexOf(w);
+                    if (idx > -1) {
+                        tempSelected.splice(idx, 1);
+                        return false;
+                    }
+                    return true;
+                });
+            }
+
+            renderWordChips();
+            updateFeedbackBanner();
+            updateNavigationButtons();
+            renderGridDrawer();
+        }
+
+        function renderWordChips() {
+            const dropZone = document.getElementById('answerDropZone');
+            const poolZone = document.getElementById('wordsPool');
+            const placeholder = document.getElementById('emptyPlaceholder');
+
+            // Clear existing chips
+            dropZone.querySelectorAll('.word-chip').forEach(el => el.remove());
+            poolZone.innerHTML = '';
+
+            // Toggle placeholder visibility
+            if (currentSelected.length === 0) {
+                placeholder.classList.remove('hidden');
+            } else {
+                placeholder.classList.add('hidden');
+            }
+
+            // Render Answer Dropzone chips
+            currentSelected.forEach((word, idx) => {
+                const chip = createChip(word, idx, 'answer');
+                dropZone.appendChild(chip);
+            });
+
+            // Render Pool Zone chips
+            currentPool.forEach((word, idx) => {
+                const chip = createChip(word, idx, 'pool');
+                poolZone.appendChild(chip);
+            });
+        }
+
+        function createChip(word, index, source) {
+            const btn = document.createElement('button');
+            btn.className = `word-chip font-medium text-sm sm:text-base px-3 py-2 rounded-xl shadow-md border cursor-pointer flex items-center justify-center transition-all ${
+                source === 'answer' 
+                    ? 'bg-indigo-600 border-indigo-400 text-white hover:bg-indigo-700' 
+                    : 'bg-slate-700 border-slate-600 text-slate-100 hover:bg-slate-600'
+            }`;
+            btn.textContent = word;
+            btn.draggable = true;
+
+            // Click listener
+            btn.onclick = () => {
+                playSound('click');
+                if (source === 'pool') {
+                    moveWordToAnswer(index);
+                } else {
+                    moveWordToPool(index);
+                }
+            };
+
+            // Drag listener
+            btn.ondragstart = (e) => {
+                e.dataTransfer.setData('text/plain', JSON.stringify({ index, source }));
+            };
+
+            return btn;
+        }
+
+        function moveWordToAnswer(poolIdx) {
+            const word = currentPool.splice(poolIdx, 1)[0];
+            currentSelected.push(word);
+            saveCurrentState();
+            renderWordChips();
+        }
+
+        function moveWordToPool(answerIdx) {
+            const word = currentSelected.splice(answerIdx, 1)[0];
+            currentPool.push(word);
+            saveCurrentState();
+            renderWordChips();
+        }
+
+        function clearSelectedWords() {
+            playSound('click');
+            const q = questionsData[currentIndex];
+            currentSelected = [];
+            currentPool = shuffleArray(q.words);
+            saveCurrentState();
+            renderWordChips();
+        }
+
+        function saveCurrentState() {
+            userState[currentIndex].userWords = [...currentSelected];
+        }
+
+        // Drag & Drop HTML5 Helpers
+        function allowDrop(e) {
+            e.preventDefault();
+        }
+
+        function handleDropToAnswer(e) {
+            e.preventDefault();
+            const dataStr = e.dataTransfer.getData('text/plain');
+            if (!dataStr) return;
+            const { index, source } = JSON.parse(dataStr);
+            if (source === 'pool') {
+                moveWordToAnswer(index);
+            }
+        }
+
+        function handleDropToPool(e) {
+            e.preventDefault();
+            const dataStr = e.dataTransfer.getData('text/plain');
+            if (!dataStr) return;
+            const { index, source } = JSON.parse(dataStr);
+            if (source === 'answer') {
+                moveWordToPool(index);
+            }
+        }
+
+        function checkAnswer() {
+            const q = questionsData[currentIndex];
+            const state = userState[currentIndex];
+
+            if (currentSelected.length === 0) {
+                showToast("Please tap or drag words into the answer box first!");
+                return;
+            }
+
+            const targetSentence = q.words.join(' ');
+            const userSentence = currentSelected.join(' ');
+
+            state.attempts++;
+
+            const feedbackBanner = document.getElementById('feedbackBanner');
+            const feedbackIcon = document.getElementById('feedbackIcon');
+            const feedbackTitle = document.getElementById('feedbackTitle');
+            const feedbackText = document.getElementById('feedbackText');
+            const correctOrderBox = document.getElementById('correctOrderBox');
+            const correctOrderSentence = document.getElementById('correctOrderSentence');
+            const card = document.getElementById('quizCard');
+
+            if (userSentence === targetSentence) {
+                // Correct!
+                playSound('correct');
+                if (state.state !== 'correct') {
+                    state.state = 'correct';
+                    score += 10;
+                    streak++;
+                }
+
+                feedbackBanner.className = "mb-6 p-4 rounded-xl border bg-emerald-950/60 border-emerald-500/40 text-emerald-200 animate-pop";
+                feedbackIcon.className = "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-emerald-500 text-slate-900 font-bold text-lg";
+                feedbackIcon.innerHTML = `<i class="fa-solid fa-check"></i>`;
+                feedbackTitle.textContent = "Excellent! Correct Question Order";
+                feedbackTitle.className = "font-bold text-sm mb-1 text-emerald-300";
+                feedbackText.textContent = q.explanation;
+                correctOrderBox.classList.add('hidden');
+
+                document.getElementById('checkBtn').classList.add('hidden');
+                document.getElementById('nextBtn').classList.remove('hidden');
+
+            } else {
+                // Incorrect
+                playSound('error');
+                state.state = 'incorrect';
+                streak = 0;
+
+                card.classList.add('animate-shake');
+                setTimeout(() => card.classList.remove('animate-shake'), 400);
+
+                feedbackBanner.className = "mb-6 p-4 rounded-xl border bg-rose-950/60 border-rose-500/40 text-rose-200 animate-pop";
+                feedbackIcon.className = "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-rose-500 text-white font-bold text-lg";
+                feedbackIcon.innerHTML = `<i class="fa-solid fa-xmark"></i>`;
+                feedbackTitle.textContent = "Not quite right yet";
+                feedbackTitle.className = "font-bold text-sm mb-1 text-rose-300";
+                feedbackText.textContent = "Check word order (e.g. question word first, followed by helper verb, subject, and main verb).";
+                
+                correctOrderBox.classList.remove('hidden');
+                correctOrderSentence.textContent = q.words.join(' ');
+            }
+
+            feedbackBanner.classList.remove('hidden');
+            updateGlobalStats();
+            renderGridDrawer();
+        }
+
+        function updateFeedbackBanner() {
+            const state = userState[currentIndex];
+            const q = questionsData[currentIndex];
+            const feedbackBanner = document.getElementById('feedbackBanner');
+            const checkBtn = document.getElementById('checkBtn');
+            const nextBtn = document.getElementById('nextBtn');
+
+            if (state.state === 'correct') {
+                checkBtn.classList.add('hidden');
+                nextBtn.classList.remove('hidden');
+            } else {
+                checkBtn.classList.remove('hidden');
+                nextBtn.classList.add('hidden');
+                if (state.state === 'unanswered') {
+                    feedbackBanner.classList.add('hidden');
+                }
+            }
+        }
+
+        // Hint feature
+        function getHint() {
+            const state = userState[currentIndex];
+            const q = questionsData[currentIndex];
+
+            state.hintShown = true;
+            document.getElementById('patternText').textContent = q.pattern;
+            document.getElementById('patternHint').classList.remove('hidden');
+
+            // Find first word mismatch and highlight/autofill
+            for (let i = 0; i < q.words.length; i++) {
+                if (currentSelected[i] !== q.words[i]) {
+                    showToast(`Hint: The word at position ${i + 1} should be "${q.words[i]}"`);
+                    playSound('click');
+                    break;
+                }
+            }
+        }
+
+        function navigateQuestion(direction) {
+            const newIdx = currentIndex + direction;
+            if (newIdx >= 0 && newIdx < 50) {
+                currentIndex = newIdx;
+                renderQuestion();
+            } else if (newIdx >= 50) {
+                showResultsModal();
+            }
+        }
+
+        function updateNavigationButtons() {
+            document.getElementById('prevBtn').disabled = (currentIndex === 0);
+        }
+
+        function updateGlobalStats() {
+            document.getElementById('scoreDisplay').textContent = score;
+            const progressPercent = ((currentIndex + 1) / 50) * 100;
+            document.getElementById('progressBar').style.width = `${progressPercent}%`;
+        }
+
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-5 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl shadow-xl z-50 animate-pop border border-indigo-400';
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
+
+        function toggleGridDrawer(forceState) {
+            const drawer = document.getElementById('gridDrawer');
+            const overlay = document.getElementById('drawerOverlay');
+            const isOpen = !drawer.classList.contains('translate-x-full');
+            const targetState = (forceState !== undefined) ? forceState : !isOpen;
+
+            if (targetState) {
+                drawer.classList.remove('translate-x-full');
+                overlay.classList.remove('hidden');
+                renderGridDrawer();
+            } else {
+                drawer.classList.add('translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function renderGridDrawer() {
+            const grid = document.getElementById('questionsGrid');
+            grid.innerHTML = questionsData.map((q, idx) => {
+                const state = userState[idx];
+                let bgClass = "bg-slate-700/60 text-slate-300 border-slate-600 hover:bg-slate-600";
+
+                if (state.state === 'correct') {
+                    bgClass = "bg-emerald-600/30 text-emerald-300 border-emerald-500/50 hover:bg-emerald-600/50";
+                } else if (state.state === 'incorrect') {
+                    bgClass = "bg-rose-600/30 text-rose-300 border-rose-500/50 hover:bg-rose-600/50";
+                }
+
+                if (idx === currentIndex) {
+                    bgClass += " ring-2 ring-indigo-400 font-extrabold scale-105";
+                }
+
+                return `
+                    <button onclick="jumpToQuestion(${idx})" class="h-10 rounded-lg border text-xs font-mono font-bold flex items-center justify-center transition-all ${bgClass}">
+                        ${idx + 1}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function jumpToQuestion(idx) {
+            currentIndex = idx;
+            renderQuestion();
+            toggleGridDrawer(false);
+        }
+
+        function showResultsModal() {
+            const modal = document.getElementById('resultsModal');
+            const finalScoreEl = document.getElementById('finalScore');
+            const accuracyEl = document.getElementById('accuracyPercent');
+            const rankEl = document.getElementById('masteryBadge');
+            const breakdownList = document.getElementById('breakdownList');
+            const retryBtn = document.getElementById('retryMistakesBtn');
+
+            const correctCount = userState.filter(s => s.state === 'correct').length;
+            const attemptedCount = userState.filter(s => s.state !== 'unanswered').length;
+            const accuracy = attemptedCount > 0 ? Math.round((correctCount / 50) * 100) : 0;
+
+            finalScoreEl.textContent = `${correctCount} / 50`;
+            accuracyEl.textContent = `${accuracy}%`;
+
+            let rank = "A2 Beginner";
+            if (accuracy >= 90) rank = "A2 Grammar Master 🌟";
+            else if (accuracy >= 75) rank = "A2 Proficient 👍";
+            else if (accuracy >= 50) rank = "A2 Developing 📖";
+            rankEl.textContent = rank;
+
+            // Generate breakdown list
+            breakdownList.innerHTML = questionsData.map((q, idx) => {
+                const state = userState[idx];
+                const statusIcon = state.state === 'correct' 
+                    ? '<i class="fa-solid fa-circle-check text-emerald-400"></i>' 
+                    : state.state === 'incorrect' 
+                        ? '<i class="fa-solid fa-circle-xmark text-rose-400"></i>' 
+                        : '<i class="fa-solid fa-minus text-slate-500"></i>';
+
+                return `
+                    <div class="p-2 rounded bg-slate-800 border border-slate-700/60 flex items-start gap-2">
+                        <div class="mt-0.5">${statusIcon}</div>
+                        <div class="flex-1">
+                            <div class="flex justify-between font-medium text-slate-200 text-[11px]">
+                                <span>#${idx + 1}. ${q.category}</span>
+                            </div>
+                            <p class="text-slate-300 font-mono text-[11px] mt-0.5">${q.words.join(' ')}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const mistakeCount = userState.filter(s => s.state === 'incorrect').length;
+            if (mistakeCount > 0) {
+                retryBtn.classList.remove('hidden');
+            } else {
+                retryBtn.classList.add('hidden');
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeResultsModal() {
+            document.getElementById('resultsModal').classList.add('hidden');
+        }
+
+        function restartQuiz() {
+            closeResultsModal();
+            initQuiz();
+        }
+
+        function retryMistakes() {
+            closeResultsModal();
+            const firstMistake = userState.findIndex(s => s.state === 'incorrect');
+            if (firstMistake !== -1) {
+                currentIndex = firstMistake;
+                renderQuestion();
+            }
+        }
+    </script>
+</body>
+</html>
